@@ -8,6 +8,8 @@ var frame_count = 0;
 
 const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
 const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+const fsl = 24;
+
 
 var elem = document.body;
 var two = new Two(params).appendTo(elem);
@@ -193,16 +195,25 @@ function generate() {
         cols[l] = rgb(rand_between(100,255), rand_between(100,255), rand_between(100,255))
     }
 
-    var strike = []
+    var strike = [];
     var colour = [209, 179, 193];
-    var strikelen = first_grounder.generation + 100;
+    var strikelen = first_grounder.generation + 300;
 
-    strikenum = rand_between(2, 5);
-    thickness = 8
-    td = 12
-    fsl = td*2
-    tdc = 0
-    tdcc = 0
+    strikenum = 2;
+    
+    var strokes = [];
+    for (var i = 0; i < strikenum; i++) {
+        if (i == 0) {
+            strokes.push([0, fsl, rand_between(7,13)]);
+
+        } else {
+            ss = rand_between(strokes[i-1][1]+10, strokes[i-1][1]+16)
+            strokes.push([ss, ss + rand_between(10, 20), strokes[i-1][2]/2])
+        }
+    }
+
+    
+    
 
     for (v of vertices) {
         if (v.parent != null) {
@@ -218,17 +229,30 @@ function generate() {
 
                 } else if (i >= first_grounder.generation) {
                     if (v.main == 0) {
-                        strokeinfo[1].push([rgb(0,0,0), 1, 0]);
+                        if (i >= first_grounder.generation + fsl/4) {
+                            strokeinfo[1].push([rgb(0,0,0), 1, 0]);
+                        } else {
+                            strokeinfo[1].push([rgb(0,0,0), 1, 1]);
+                        }
+                        
 
                     } else {
                         opacity = 1
-                        if (i - first_grounder.generation < fsl) {
+                        instroke = false
+                        
+                        for (s of strokes) {
+                            if (i-first_grounder.generation >= s[0] && i-first_grounder.generation <= s[1]) {
+                                instroke = true
+                                thickness = s[2]
+                            }
+                        }
+                        if (instroke) {
                             brightness = 255;
-                        } else if (i == strikelen) {
-                            brightness = 0;
-                            opacity = 0
                         } else {
-                            brightness = 255.0 * 2.7183**(-(i-first_grounder.generation+fsl)/40);
+                            brightness = 255.0 * 2.7183**(-(i-first_grounder.generation+fsl)/50);
+                        }
+                        if (brightness < 40) {
+                            opacity = 0;
                         }
                         strokeinfo[1].push([rgb(brightness,brightness,brightness), thickness, opacity]);
                     }
@@ -254,7 +278,7 @@ function generate() {
         }
     }
     strike.unshift(strikelen);
-    if (frame_count + strikelen >= 1000) {
+    if (frame_count + strikelen >= 3000) {
         strike.unshift((frame_count + strikelen) % 1000);
     } else {
         strike.unshift(frame_count);
@@ -268,7 +292,7 @@ function generate() {
 
 function update() {
     frame_count++;
-    if (frame_count == 1000) {
+    if (frame_count == 3000) {
         frame_count = 0;
     }
     background.fill = rgb(0,0,0);
@@ -280,14 +304,20 @@ function update() {
                 strike[i][0].opacity = strike[i][1][frame_count-strike[0]][2];
             }
         }
-        if (frame_count >= strike[0] + strike[1] - 104 && frame_count <= strike[0] + strike[1] - 98) {
-            closeness = frame_count - (strike[0] + strike[1] - 104);
-            bloom_brightness = rgb(Math.floor(209*0.4*closeness), Math.floor(179*0.4*closeness), Math.floor(193*0.4*closeness))
-            //console.log(closeness, bloom_brightness);
+        if (frame_count >= strike[0] + strike[1] - 304 && frame_count <= strike[0] + strike[1] - 298 + 2*fsl) {
+            closeness = frame_count - (strike[0] + strike[1] - 304);
+            if (closeness < 6) {
+                bloom_brightness = rgb(Math.floor(209*0.4*closeness), Math.floor(179*0.4*closeness), Math.floor(193*0.4*closeness))
+            } else {
+                bloom_brightness = rgb(Math.floor(209*0.4*(1-(closeness-5)/(2.2*fsl))), Math.floor(179*0.4*(1-(closeness-5)/(2.2*fsl))), Math.floor(193*0.4*(1-(closeness-5)/(2.2*fsl))))
+            }
+            
+            console.log(closeness, bloom_brightness);
             background.fill = bloom_brightness;
         }
     }
 }
 
 generate();
+document.getElementById("two-0").setAttribute('onclick', "generate()");
 two.play();
