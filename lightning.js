@@ -318,6 +318,6 @@ function update() {
     }
 }
 
-generate();
+//generate();
 document.getElementById("two-0").setAttribute('onclick', "generate()");
 two.play();
