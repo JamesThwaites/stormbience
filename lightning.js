@@ -9,6 +9,7 @@ var frame_count = 0;
 const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
 const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 const fsl = 24;
+const frame_cycle = 10000
 
 
 var elem = document.body;
@@ -278,7 +279,7 @@ function generate() {
         }
     }
     strike.unshift(strikelen);
-    if (frame_count + strikelen >= 3000) {
+    if (frame_count + strikelen >= frame_cycle) {
         strike.unshift((frame_count + strikelen) % 1000);
     } else {
         strike.unshift(frame_count);
@@ -292,7 +293,7 @@ function generate() {
 
 function update() {
     frame_count++;
-    if (frame_count == 3000) {
+    if (frame_count == frame_cycle) {
         frame_count = 0;
     }
     background.fill = rgb(0,0,0);
