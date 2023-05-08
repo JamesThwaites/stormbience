@@ -1,4 +1,3 @@
-
 var params = {
     fullscreen: true
 };
@@ -10,7 +9,7 @@ const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth
 const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
 const fsl = 24;
 const frame_cycle = 10000
-
+const strokelength = 30
 
 var elem = document.body;
 var two = new Two(params).appendTo(elem);
@@ -37,6 +36,7 @@ class Vertex {
     hg_child = -1;
     branch_len = -1;
     children = [];
+    cos = 0;
 
     constructor(x, y, generation, parent) {
         this.x = x;
@@ -54,6 +54,17 @@ class Vertex {
 
     dist_to(pos) {
         return Math.sqrt((this.x - pos[0])**2 + (this.y - pos[1])**2);
+    }
+
+    cosine_between_strokes() {
+        if (this.parent == null || this.parent.parent == null) {
+            return 0;
+        }
+        var parent_vector = [this.parent.parent.x - this.parent.x, this.parent.parent.y - this.parent.y]
+        var this_vector = [this.x - this.parent.x, this.y - this.parent.y]
+
+        var dot_prod = this_vector[0]*parent_vector[0] + this_vector[1]*parent_vector[1]
+        return ((dot_prod/(strokelength**2))**2)**0.5
     }
 
     add_child(child) {
@@ -100,7 +111,7 @@ class Vertex {
 
 function generate() {
     
-    console.log(vw, vh);
+    //console.log(vw, vh);
 
 
     var vertices = [];
@@ -126,7 +137,7 @@ function generate() {
         }
         //console.log(nv);
         //console.log(randpos);
-        var new_point = nv.point_in_dir(randpos, 30);
+        var new_point = nv.point_in_dir(randpos, strokelength);
         //console.log(new_point);
         var new_vertex = new Vertex(new_point[0], new_point[1], nv.generation + 1, nv);
         nv.add_child(new_vertex);
@@ -190,6 +201,8 @@ function generate() {
     lens = new Set();
     for (v of vertices) {
         lens.add(v.branch_len);
+        v.cos = v.cosine_between_strokes();
+        //console.log(v.cos);
     }
 
     for (l of lens) {
@@ -220,20 +233,20 @@ function generate() {
         if (v.parent != null) {
             var temp = two.makeLine(v.x, v.y, v.parent.x, v.parent.y);
             temp.stroke = rgb(0,0,0);
-
+            var this_vector = [v.parent.x - v.x, v.parent.y - v.y]
             var strokeinfo = [temp, []]
 
             for (var i = 0; i <= strikelen; i++) {
                 var frame = []
                 if (i < v.generation) {
-                    strokeinfo[1].push([rgb(0,0,0), 1, 0]);
+                    strokeinfo[1].push([rgb(0,0,0), 1, 0, [v.parent.x, v.parent.y]]);
 
                 } else if (i >= first_grounder.generation) {
                     if (v.main == 0) {
                         if (i >= first_grounder.generation + fsl/4) {
-                            strokeinfo[1].push([rgb(0,0,0), 1, 0]);
+                            strokeinfo[1].push([rgb(0,0,0), 1, 0, [v.parent.x, v.parent.y]]);
                         } else {
-                            strokeinfo[1].push([rgb(0,0,0), 1, 1]);
+                            strokeinfo[1].push([rgb(0,0,0), 1, 1, [v.parent.x, v.parent.y]]);
                         }
                         
 
@@ -255,7 +268,8 @@ function generate() {
                         if (brightness < 40) {
                             opacity = 0;
                         }
-                        strokeinfo[1].push([rgb(brightness,brightness,brightness), thickness, opacity]);
+                        strokeinfo[1].push([rgb(brightness,brightness,brightness), thickness, opacity, [v.x + ((this_vector[0]/strokelength)*(strokelength+thickness*0.6*(1-v.cos))), v.y + ((this_vector[1]/strokelength)*(strokelength+thickness*0.6*(1-v.cos)))]]);
+                        //console.log(this_vector[0])
                     }
                     
 
@@ -271,11 +285,12 @@ function generate() {
                     frame.push(rgb(Math.floor(colour[0]*f), Math.floor(colour[1]*f), Math.floor(colour[2]*f)));
                     frame.push(1);
                     frame.push(1);
+                    frame.push([v.parent.x, v.parent.y]);
                     strokeinfo[1].push([...frame]);
                 }
             }
             strike.push([...strokeinfo]);
-            
+            //console.log(strokeinfo)
         }
     }
     strike.unshift(strikelen);
@@ -297,12 +312,18 @@ function update() {
         frame_count = 0;
     }
     background.fill = rgb(0,0,0);
+    if (strikes.length > 0 && frame_count > strikes[0][0] + strikes[0][1]) {
+        strikes.shift();
+    }
+
     for (strike of strikes) {
         if (frame_count >= strike[0] && frame_count <= strike[0] + strike[1]) {
             for (var i = 2; i < strike.length; i++) {
                 strike[i][0].stroke = strike[i][1][frame_count-strike[0]][0];
                 strike[i][0].linewidth = strike[i][1][frame_count-strike[0]][1];
                 strike[i][0].opacity = strike[i][1][frame_count-strike[0]][2];
+                strike[i][0].vertices[1].x = strike[i][1][frame_count-strike[0]][3][0];
+                strike[i][0].vertices[1].y = strike[i][1][frame_count-strike[0]][3][1];
             }
         }
         if (frame_count >= strike[0] + strike[1] - 304 && frame_count <= strike[0] + strike[1] - 298 + 2*fsl) {
@@ -313,7 +334,7 @@ function update() {
                 bloom_brightness = rgb(Math.floor(209*0.4*(1-(closeness-5)/(2.2*fsl))), Math.floor(179*0.4*(1-(closeness-5)/(2.2*fsl))), Math.floor(193*0.4*(1-(closeness-5)/(2.2*fsl))))
             }
             
-            console.log(closeness, bloom_brightness);
+            //console.log(closeness, bloom_brightness);
             background.fill = bloom_brightness;
         }
     }
