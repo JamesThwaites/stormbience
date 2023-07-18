@@ -1,5 +1,5 @@
 # stormbience
-A lightning strike generator/visualiser. Try it out on github pages [jamesthwaites.github.io/stormbience](jamesthwaites.github.io/stormbience)
+A lightning strike generator/visualiser. Click or tap to generate and play one strike. Try it out on github pages: jamesthwaites.github.io/stormbience
 
 The strike shapes are generated using a modified Rapidly Exploring Random Tree (RRT) algorithm. See https://en.wikipedia.org/wiki/Rapidly_exploring_random_tree
 
