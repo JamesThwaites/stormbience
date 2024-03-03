@@ -113,7 +113,6 @@ function generate() {
     
     //console.log(vw, vh);
 
-
     var vertices = [];
     var baseline = 0;
     var root = new Vertex(rand_between(100, vw - 100), 0, 0, null);
@@ -340,6 +339,12 @@ function update() {
     }
 }
 
+function first_click() {
+    document.getElementById('notice').style.display = 'none';
+    generate();
+}
+
 //generate();
 document.getElementById("two-0").setAttribute('onclick', "generate()");
+document.getElementById("notice").setAttribute('onclick', "first_click()");
 two.play();
